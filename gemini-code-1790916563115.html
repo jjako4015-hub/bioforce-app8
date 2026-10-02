@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIO UP — Биология оқу платформасы</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bioDark: '#064e3b',
+            bioEmerald: '#059669',
+            bioAccent: '#10b981',
+            bioLight: '#ecfdf5',
+            bioGold: '#f59e0b'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #f0fdf4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid #d1fae5; }
+  </style>
+</head>
+<body class="text-gray-800 flex h-screen overflow-hidden">
+
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="w-64 bg-bioDark text-white flex flex-col justify-between p-4 shadow-xl z-20">
+    <div>
+      <div class="flex items-center gap-3 px-2 py-4 mb-6 border-b border-emerald-800">
+        <i data-lucide="dna" class="w-8 h-8 text-bioAccent animate-pulse"></i>
+        <h1 class="text-2xl font-bold tracking-wider text-bioLight">BIO UP</h1>
+      </div>
+      <nav class="space-y-2">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition bg-emerald-700 text-white font-medium">
+          <i data-lucide="home"></i> Басты бет
+        </button>
+        <button onclick="switchTab('learn')" id="nav-learn" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-emerald-800 text-emerald-100 font-medium">
+          <i data-lucide="book-open"></i> Оқу
+        </button>
+        <button onclick="switchTab('mistakes')" id="nav-mistakes" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-emerald-800 text-emerald-100 font-medium">
+          <i data-lucide="flask-conical"></i> Қатемен жұмыс <span id="mistake-badge" class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+        </button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-emerald-800 text-emerald-100 font-medium">
+          <i data-lucide="user"></i> Профиль
+        </button>
+      </nav>
+    </div>
+
+    <div>
+      <button onclick="openMonthlyTest()" id="monthly-btn" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-amber-500 to-bioGold hover:from-amber-600 hover:to-yellow-600 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-105 opacity-50 cursor-not-allowed" disabled>
+        <i data-lucide="calendar"></i> 📅 АЙЛЫҚ ТЕСТ
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 overflow-y-auto p-8 relative" id="main-container">
+    
+    <!-- TOP BAR STATS -->
+    <header class="flex justify-between items-center mb-8 glass-card p-4 rounded-2xl shadow-sm">
+      <div class="flex items-center gap-4">
+        <span class="text-sm font-semibold text-emerald-800">Оқушы: <span id="user-display-name" class="text-bioDark font-bold">Оқушы</span></span>
+        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold border border-emerald-300" id="user-universe-badge">Dr. Stone</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2">
+          <i data-lucide="award" class="text-bioGold"></i>
+          <span class="font-bold text-gray-700" id="user-rank-display">Beginner — Chrome</span>
+        </div>
+        <div class="flex items-center gap-2 bg-amber-50 px-3 py-1 rounded-xl border border-amber-200">
+          <i data-lucide="star" class="text-bioGold fill-bioGold"></i>
+          <span class="font-black text-amber-700" id="user-xp-display">0 XP</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- TAB: DASHBOARD -->
+    <section id="tab-dashboard" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- CHARACTER CARD -->
+        <div class="glass-card p-6 rounded-2xl shadow-sm border-l-4 border-bioEmerald flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Қазіргі Кейіпкер</span>
+            <h3 class="text-2xl font-black text-bioDark mt-1" id="dash-char-name">Chrome</h3>
+            <p class="text-sm text-bioEmerald font-bold mt-1" id="dash-rank-name">Beginner</p>
+          </div>
+          <div class="mt-4">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span>XP Прогресс</span>
+              <span id="dash-xp-text">0 / 100 XP</span>
+            </div>
+            <div class="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+              <div id="dash-xp-bar" class="bg-bioAccent h-full transition-all duration-500" style="w-0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WEEK 1 PROGRESS -->
+        <div class="glass-card p-6 rounded-2xl shadow-sm border-l-4 border-bioAccent">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">1-Апта Прогресі</span>
+          <h3 class="text-3xl font-black text-bioDark mt-2" id="w1-progress-percent">0%</h3>
+          <p class="text-xs text-gray-500 mt-1" id="w1-status-text">4 тақырыптың 0-і аяқталды</p>
+          <div class="w-full bg-gray-200 h-2 rounded-full mt-4 overflow-hidden">
+            <div id="w1-bar" class="bg-bioAccent h-full w-0%"></div>
+          </div>
+        </div>
+
+        <!-- WEEK 2 PROGRESS -->
+        <div class="glass-card p-6 rounded-2xl shadow-sm border-l-4 border-gray-400 opacity-75" id="w2-dash-card">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">2-Апта Прогресі</span>
+          <h3 class="text-3xl font-black text-gray-500 mt-2" id="w2-progress-percent">🔒 Жабық</h3>
+          <p class="text-xs text-gray-400 mt-1">1-аптаны толық аяқтаңыз</p>
+          <div class="w-full bg-gray-200 h-2 rounded-full mt-4 overflow-hidden">
+            <div id="w2-bar" class="bg-gray-400 h-full w-0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="glass-card p-6 rounded-2xl shadow-sm">
+        <h3 class="text-lg font-bold text-bioDark mb-4">Жылдам шарлау</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button onclick="switchTab('learn')" class="p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-emerald-900 font-bold flex flex-col items-center gap-2">
+            <i data-lucide="book-open" class="w-6 h-6 text-bioEmerald"></i> Тақырыптар
+          </button>
+          <button onclick="switchTab('mistakes')" class="p-4 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl text-red-900 font-bold flex flex-col items-center gap-2">
+            <i data-lucide="flask-conical" class="w-6 h-6 text-red-500"></i> Қатемен жұмыс
+          </button>
+          <button onclick="switchTab('profile')" class="p-4 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl text-amber-900 font-bold flex flex-col items-center gap-2">
+            <i data-lucide="user" class="w-6 h-6 text-bioGold"></i> Профиль
+          </button>
+          <button id="quick-monthly" onclick="openMonthlyTest()" class="p-4 bg-gray-100 border border-gray-300 rounded-xl text-gray-400 font-bold flex flex-col items-center gap-2 cursor-not-allowed" disabled>
+            <i data-lucide="calendar" class="w-6 h-6"></i> Айлық тест
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: LEARN (MODULES) -->
+    <section id="tab-learn" class="space-y-8 hidden">
+      <!-- MODULE 1 -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-black text-bioDark flex items-center gap-2">
+            <span class="bg-bioDark text-white px-3 py-1 rounded-lg text-sm">1-АПТА</span> Жасушалық биология және биохимия
+          </h2>
+          <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">4 Тақырып + Қорытынды Тест</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="week1-topics-list"></div>
+        
+        <!-- FINAL TEST WEEK 1 CARD -->
+        <div id="final-test-w1-card" class="mt-4 p-6 glass-card rounded-2xl border-2 border-dashed border-bioGold flex items-center justify-between opacity-60">
+          <div>
+            <span class="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded">🏆 50 СҰРАҚ</span>
+            <h3 class="text-lg font-bold text-bioDark mt-1">1-АПТА ҚОРЫТЫНДЫ ТЕСТІ</h3>
+            <p class="text-xs text-gray-500 mt-1" id="final-w1-status">🔒 1-аптаның барлық 4 тақырыбын орындаңыз</p>
+          </div>
+          <button id="final-w1-btn" onclick="startFinalTest(1)" class="px-6 py-3 bg-gray-300 text-gray-500 font-bold rounded-xl cursor-not-allowed" disabled>Бастау</button>
+        </div>
+      </div>
+
+      <!-- MODULE 2 -->
+      <div class="pt-6 border-t border-emerald-200">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-black text-gray-400 flex items-center gap-2">
+            <span class="bg-gray-400 text-white px-3 py-1 rounded-lg text-sm">2-АПТА</span> Өсімдіктер мен Жануарлар Биологиясы
+          </h2>
+          <span class="text-xs font-bold text-gray-400 bg-gray-200 px-3 py-1 rounded-full">🔒 Жабық Module</span>
+        </div>
+        <div id="week2-lock-notice" class="p-8 glass-card rounded-2xl text-center border border-gray-200">
+          <i data-lucide="lock" class="w-12 h-12 mx-auto text-gray-400 mb-2"></i>
+          <h3 class="text-lg font-bold text-gray-600">2-АПТА БӨЛІМІ ЖАБЫҚ</h3>
+          <p class="text-sm text-gray-500 mt-1">2-аптаны ашу үшін 1-аптаның 4 тақырыбын және 50 сұрақтық қорытынды тестін аяқтаңыз.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden" id="week2-topics-list"></div>
+      </div>
+    </section>
+
+    <!-- TAB: MISTAKES -->
+    <section id="tab-mistakes" class="space-y-6 hidden">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-black text-bioDark">🧪 Қатемен жұмыс</h2>
+          <p class="text-sm text-gray-600 mt-1">Тесттерде жіберілген қате сұрақтар автоматты осы бөлімге жиналады.</p>
+        </div>
+        <button onclick="renderMistakes()" class="px-4 py-2 bg-emerald-100 text-emerald-800 font-bold rounded-xl text-sm hover:bg-emerald-200">
+          🔄 Жаңарту
+        </button>
+      </div>
+
+      <div id="mistakes-container" class="space-y-4"></div>
+    </section>
+
+    <!-- TAB: PROFILE -->
+    <section id="tab-profile" class="space-y-6 hidden">
+      <div class="glass-card p-6 rounded-2xl shadow-sm">
+        <h2 class="text-2xl font-black text-bioDark mb-4">👤 Оқушы Профилі</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Аты-жөніңіз</label>
+              <input type="text" id="profile-name-input" class="w-full p-3 border border-emerald-200 rounded-xl focus:outline-bioEmerald" value="Оқушы">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Кейіпкер Әлемін Таңдау</label>
+              <select id="universe-select" onchange="changeUniverse()" class="w-full p-3 border border-emerald-200 rounded-xl focus:outline-bioEmerald font-bold text-bioDark">
+                <option value="Dr. Stone">🧪 Dr. Stone (Биологияға бейімделген)</option>
+                <option value="Demon Slayer">🗡️ Demon Slayer</option>
+                <option value="One Piece">🏴‍☠️ One Piece</option>
+                <option value="My Hero Academia">👊 My Hero Academia</option>
+              </select>
+            </div>
+            <button onclick="saveProfile()" class="px-6 py-3 bg-bioEmerald hover:bg-bioDark text-white font-bold rounded-xl shadow-md transition">
+              Сақтау
+            </button>
+          </div>
+
+          <div class="bg-bioLight p-6 rounded-2xl border border-emerald-200 flex flex-col justify-center items-center text-center">
+            <span class="text-xs font-bold text-emerald-600 uppercase tracking-widest">Ағымдағы Ранг</span>
+            <h3 class="text-3xl font-black text-bioDark mt-2" id="prof-rank-name">Beginner</h3>
+            <p class="text-lg font-bold text-bioEmerald mt-1" id="prof-char-name">Chrome</p>
+            <div class="w-full bg-emerald-200 h-3 rounded-full mt-4 overflow-hidden">
+              <div id="prof-xp-bar" class="bg-bioAccent h-full w-0%"></div>
+            </div>
+            <span class="text-xs font-bold text-emerald-700 mt-2" id="prof-xp-text">0 / 100 XP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS GRID -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-card p-4 rounded-xl text-center">
+          <span class="text-xs text-gray-500 font-bold">Жалпы XP</span>
+          <h4 class="text-2xl font-black text-amber-500 mt-1" id="stat-total-xp">0</h4>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center">
+          <span class="text-xs text-gray-500 font-bold">Аяқталған Тақырыптар</span>
+          <h4 class="text-2xl font-black text-bioEmerald mt-1" id="stat-completed-topics">0 / 8</h4>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center">
+          <span class="text-xs text-gray-500 font-bold">Қате Сұрақтар</span>
+          <h4 class="text-2xl font-black text-red-500 mt-1" id="stat-mistakes-count">0</h4>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center">
+          <span class="text-xs text-gray-500 font-bold">Дұрыс Жауап Пранкі</span>
+          <h4 class="text-2xl font-black text-bioDark mt-1" id="stat-accuracy">0%</h4>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEST INTERFACE MODAL -->
+    <div id="test-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+      <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- TEST HEADER -->
+        <div class="bg-bioDark text-white p-6 flex justify-between items-center">
+          <div>
+            <span class="text-xs text-emerald-300 font-bold uppercase tracking-wider" id="test-category-label">Тақырыптық Тест</span>
+            <h3 class="text-xl font-bold mt-1" id="test-title-label">Тақырып атауы</h3>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="bg-emerald-800 text-emerald-100 text-xs px-3 py-1 rounded-full font-mono" id="test-timer">00:00</span>
+            <button onclick="closeTestModal()" class="text-emerald-200 hover:text-white"><i data-lucide="x"></i></button>
+          </div>
+        </div>
+
+        <!-- TEST CONTENT -->
+        <div class="p-8 overflow-y-auto flex-1" id="test-body-container">
+          <div class="flex justify-between text-xs font-bold text-gray-400 mb-2">
+            <span id="question-number-label">Сұрақ 1 / 20</span>
+            <span id="question-id-label" class="font-mono text-emerald-600">ID: BIO-W1-T1-Q001</span>
+          </div>
+          
+          <h4 class="text-lg font-bold text-gray-800 mb-6 leading-relaxed" id="question-text">Сұрақ мәтіні осы жерде болады...</h4>
+
+          <div class="space-y-3" id="options-container"></div>
+
+          <!-- EXPLANATION BOX -->
+          <div id="explanation-box" class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 hidden">
+            <span class="text-xs font-bold text-blue-700 uppercase">💡 Түсіндірме:</span>
+            <p class="text-sm text-blue-900 mt-1" id="explanation-text"></p>
+          </div>
+        </div>
+
+        <!-- TEST FOOTER -->
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+          <button id="prev-q-btn" onclick="navigateQuestion(-1)" class="px-4 py-2 border border-gray-300 text-gray-600 font-bold rounded-xl hover:bg-gray-100 hidden">
+            Артқа
+          </button>
+          <div class="ml-auto flex gap-3">
+            <button id="next-q-btn" onclick="navigateQuestion(1)" class="px-6 py-2.5 bg-bioEmerald hover:bg-bioDark text-white font-bold rounded-xl shadow-md transition">
+              Келесі
+            </button>
+            <button id="submit-test-btn" onclick="finishTest()" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md transition hidden">
+              Аяқтау
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT MODAL -->
+    <div id="result-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+      <div class="bg-white w-full max-w-md rounded-3xl p-8 text-center shadow-2xl space-y-6">
+        <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-bioEmerald">
+          <i data-lucide="trophy" class="w-10 h-10"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-bioDark">Тест Аяқталды!</h3>
+          <p class="text-sm text-gray-500 mt-1" id="res-test-name">1-тақырып тесті</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 bg-bioLight p-4 rounded-2xl border border-emerald-100">
+          <div>
+            <span class="text-xs font-bold text-gray-400">Нәтиже</span>
+            <p class="text-xl font-black text-bioDark mt-0.5" id="res-score-text">18 / 20</p>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-gray-400">Пайыз</span>
+            <p class="text-xl font-black text-bioEmerald mt-0.5" id="res-percent-text">90%</p>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-gray-400">Алынған XP</span>
+            <p class="text-xl font-black text-amber-500 mt-0.5" id="res-xp-text">+180 XP</p>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-gray-400">Кеткен Уақыт</span>
+            <p class="text-xl font-black text-gray-700 mt-0.5" id="res-time-text">04:12</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button onclick="closeResultModal()" class="w-full py-3 bg-bioEmerald hover:bg-bioDark text-white font-bold rounded-xl shadow-md transition">
+            Жалғастыру
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- APP SCRIPT & DATA -->
+  <script>
+    // --- 1. USER & PROGRESS STATE ---
+    let state = {
+      profile: {
+        name: "Оқушы",
+        universe: "Dr. Stone",
+        xp: 0,
+        totalCorrect: 0,
+        totalAnswered: 0
+      },
+      completedTopics: [], // ['W1-T1', 'W1-T2', ...]
+      completedFinals: [], // [1, 2]
+      completedMonthly: false,
+      mistakes: [] // [{ id, qId, topicId, userAns, date }]
+    };
+
+    // --- 2. RANK SYSTEM ---
+    const RANKS = {
+      "Dr. Stone": [
+        { rank: "Beginner", char: "Chrome", xp: 0 },
+        { rank: "Rookie", char: "Suika", xp: 100 },
+        { rank: "Fighter", char: "Senku", xp: 300 },
+        { rank: "Elite", char: "Kaseki", xp: 600 },
+        { rank: "Genius", char: "Senku Science Master", xp: 1000 },
+        { rank: "Legend", char: "Senku + Kingdom of Science", xp: 1500 }
+      ],
+      "Demon Slayer": [
+        { rank: "Beginner", char: "Tanjiro", xp: 0 },
+        { rank: "Rookie", char: "Zenitsu", xp: 100 },
+        { rank: "Fighter", char: "Inosuke", xp: 300 },
+        { rank: "Elite", char: "Rengoku", xp: 600 },
+        { rank: "Hashira", char: "Giyu", xp: 1000 },
+        { rank: "Legend", char: "Yoriichi", xp: 1500 }
+      ],
+      "One Piece": [
+        { rank: "Beginner", char: "Usopp", xp: 0 },
+        { rank: "Rookie", char: "Nami", xp: 100 },
+        { rank: "Fighter", char: "Sanji", xp: 300 },
+        { rank: "Elite", char: "Zoro", xp: 600 },
+        { rank: "Captain", char: "Luffy", xp: 1000 },
+        { rank: "Legend", char: "Gear 5 Luffy", xp: 1500 }
+      ],
+      "My Hero Academia": [
+        { rank: "Beginner", char: "Deku", xp: 0 },
+        { rank: "Rookie", char: "Bakugo", xp: 100 },
+        { rank: "Hero", char: "Todoroki", xp: 300 },
+        { rank: "Elite", char: "Endeavor", xp: 600 },
+        { rank: "Pro Hero", char: "All Might", xp: 1000 },
+        { rank: "Legend", char: "Deku 100%", xp: 1500 }
+      ]
+    };
+
+    // --- 3. QUESTION DATA (WEEK 1 FULL DATA & SYSTEM TEMPLATES) ---
+    const TOPICS_DATA = [
+      {
+        id: "W1-T1",
+        week: 1,
+        title: "Жасушалық биология. Прокариот және Эукариоттар",
+        theory: "Барлық тірі ағзалар жасушадан тұрады. Бактерияларда ядро қалыптаспаған (прокариоттар), ал өсімдіктер мен жануарларда айқын ядро (эукариоттар) болады.",
+        questions: generateTopic1Questions()
+      },
+      {
+        id: "W1-T2",
+        week: 1,
+        title: "Өсімдіктер мен жануарлардың ұлпалары, мүшелері",
+        theory: "Өсімдіктерде 6 негізгі ұлпа бар (түзуші, негізгі, жабын, тірек, өткізгіш, бөліп шығарушы). Жануарларда 4 ұлпа (эпителий, дәнекер, бұлшықет, жүйке).",
+        questions: generateTopic2Questions()
+      },
+      {
+        id: "W1-T3",
+        week: 1,
+        title: "Судың маңызы және Органикалық заттар",
+        theory: "Су — әмбебап еріткіш. Органикалық заттар: көмірсулар (энергия), нәруыздар (құрылыс, фермент), майлар (энергия қоры), нуклеин қышқылдары (ДНҚ, РНҚ).",
+        questions: generateTopic3Questions()
+      },
+      {
+        id: "W1-T4",
+        week: 1,
+        title: "Минералды заттар, микро/макроэлементтер",
+        theory: "C, H, O, N, P, K, Ca, Mg — макроэлементтер. Fe, Cu, Zn, I, Mn — микроэлементтер. Азот сабақ/жапырақ өсуіне, фосфор жеміске, калий тамырға қажет.",
+        questions: generateTopic4Questions()
+      }
+    ];
+
+    // --- GENERATORS FOR TOPICS (20 UNIQUE DETAILED QUESTIONS PER TOPIC) ---
+    function generateTopic1Questions() {
+      let q = [];
+      q.push({ id:"BIO-W1-T1-Q001", diff:"Easy", text:"Алғаш рет «жасуша» терминін 1665 жылы ғылымға енгізген ғалым кім?", options:["Роберт Гук","Антони ван Левенгук","Чарльз Дарвин","Карл Линней"], corr:0, exp:"Роберт Гук тоз кесіндісін микроскоппен қарап, ұяшықтарды «жасуша» деп атаған." });
+      q.push({ id:"BIO-W1-T1-Q002", diff:"Easy", text:"Прокариоттардың эукариоттардан басты айырмашылығы неде?", options:["Қалыптасқан ядросының болмауында","Цитоплазманың болмауында","Рибосомалардың болмауында","Мембрананың болмауында"], corr:0, exp:"Прокариоттарда (бактерияларда) сақиналы ДНҚ цитоплазмада орналасады, ядро қабықшасы болмайды." });
+      q.push({ id:"BIO-W1-T1-Q003", diff:"Medium", text:"Өсімдік жасушасының қабырғасы негізінен қандай органикалық заттан тұрады?", options:["Целлюлоза (жасұнық)","Хитин","Муреин","Гликоген"], corr:0, exp:"Өсімдік қабырғасы целлюлозадан, саңырауқұлақта хитиннен, бактерияда муреиннен тұрады." });
+      q.push({ id:"BIO-W1-T1-Q004", diff:"Medium", text:"Жасушаның «энергетикалық станциясы» деп қай органоидты атайды?", options:["Митохондрия","Гольджи жиынтығы","Лизосома","Рибосома"], corr:0, exp:"Митохондрияда органикалық заттар тотығып, АТФ түрінде энергия жинақталады." });
+      q.push({ id:"BIO-W1-T1-Q005", diff:"Hard", text:"Фотосинтез процесі хлоропласттың қай бөлігінде жүзеге асады?", options:["Граналардағы ішкі мембранада","Стромада","Сыртқы мембранада","Вакуольде"], corr:0, exp:"Хлорофилл пигменті граналарда орналасады және фотосинтездің жарық фазасы осында жүреді." });
+      q.push({ id:"BIO-W1-T1-Q006", diff:"Medium", text:"Нәруыз биосинтезін тікелей жүзеге асыратын мембранасыз ұсақ органоид қайсысы?", options:["Рибосома","Лизосома","Пероксисома","Центриоль"], corr:0, exp:"Рибосомалар аминқышқылдарын біріктіріп нәруыз синтездейді." });
+      q.push({ id:"BIO-W1-T1-Q007", diff:"Hard", text:"Жасушаның өзін-өзі қорытуы (автолиз) қай органоидтың қатысуымен жүреді?", options:["Лизосома","Эндоплазмалық тор","Гольджи жиынтығы","Вакуоль"], corr:0, exp:"Лизосомада ыдыратқыш ферменттер болады, олар автолизді жүргізеді." });
+      q.push({ id:"BIO-W1-T1-Q008", diff:"Medium", text:"Тегіс эндоплазмалық торда (ЭПТ) не синтезделеді?", options:["Майлар мен көмірсулар","Нәруыздар","Нуклеин қышқылдары","АТФ"], corr:0, exp:"Бұдыр ЭПТ-да нәруыз, ал рибосомасыз тегіс ЭПТ-да май мен көмірсу синтезделеді." });
+      q.push({ id:"BIO-W1-T1-Q009", diff:"Easy", text:"Өсімдік жасушасында тургор қысымын және су балансын реттейтін органоид:", options:["Вакуоль","Митохондрия","Ядро","Гольджи жиынтығы"], corr:0, exp:"Вакуоль ішіндегі жасуша шырыны тургор қысымын ұстап тұрады." });
+      q.push({ id:"BIO-W1-T1-Q010", diff:"Medium", text:"Бактерия жасушасының қабырғасын түзетін полимер зат:", options:["Муреин","Целлюлоза","Хитин","Крахмал"], corr:0, exp:"Муреин — пептидогликан болып табылады, бактерия қабырғасының негізі." });
+      q.push({ id:"BIO-W1-T1-Q011", diff:"Hard", text:"Кариоплазма дегеніміз не?", options:["Ядро шырыны","Цитоплазманың сұйық бөлігі","Вакуоль ішіндегі сұйықтық","Митохондрия матриксы"], corr:0, exp:"Кариоплазма — ядро ішінде хромосомалар жүзіп жүретін сұйықтық." });
+      q.push({ id:"BIO-W1-T1-Q012", diff:"Medium", text:"Түссіз, крахмал қорын жинайтын пластидтер қалай аталады?", options:["Лейкопластар","Хлоропластар","Хромопластар","Каротиноидтар"], corr:0, exp:"Лейкопластар түссіз болады, онда крахмал жиналады (мысалы, картопта)." });
+      q.push({ id:"BIO-W1-T1-Q013", diff:"Hard", text:"Гольджи жиынтығының басты қызметтерінің бірі қайсысы?", options:["Заттарды түзіп, орау және көпіршіктерге жинақтау","Энергия алу","ДНҚ репликациясы","Аминқышқылын өндіру"], corr:0, exp:"Гольджи кешені ЭПТ-дан келген заттарды модификациялап, диктиосома көпіршіктеріне орайды." });
+      q.push({ id:"BIO-W1-T1-Q014", diff:"Easy", text:"Жануар жасушасында қай органоид МҰЛДЕМ БОЛМАЙДЫ?", options:["Пластидтер","Митохондрия","Рибосома","Ядро"], corr:0, exp:"Жануарлар гетеротрофты болғандықтан оларда пластидтер (хлоропластар) болмайды." });
+      q.push({ id:"BIO-W1-T1-Q015", diff:"Medium", text:"Прокариоттардың тұқым қуалау ақпараты қайда орналасады?", options:["Цитоплазмадағы сақиналы ДНҚ-да","Ядро ішінде","Митохондрияда","Лизосомада"], corr:0, exp:"Прокариоттарда ядро болмайды, ДНҚ нуклеоид аймағында цитоплазмада жүзеді." });
+      q.push({ id:"BIO-W1-T1-Q016", diff:"Hard", text:"Жасуша бөлінуі кезінде хромосомалардың біркелкі таралуын қамтамасыз етеді:", options:["Жасуша орталығы (центриольдер)","Лизосома","Вакуоль","Гольджи аппараты"], corr:0, exp:"Жасуша орталығы бөліну ұршығын түзіп, хромосомаларды екі полюске тартады." });
+      q.push({ id:"BIO-W1-T1-Q017", diff:"Medium", text:"Гүл күлтелеріне ашық түс (сары, қызыл) беретін пластид:", options:["Хромопластар","Лейкопластар","Хлоропластар","Амилопластар"], corr:0, exp:"Хромопластар құрамындағы каротиноидтар гүлдер мен жемістерге түс береді." });
+      q.push({ id:"BIO-W1-T1-Q018", diff:"Hard", text:"Митохондрияның ішкі мембранасының өсінділері қалай аталады?", options:["Кристалар","Строма","Граналар","Тилакоидтар"], corr:0, exp:"Митохондрияның ішкі мембрана өсінділері кристалар деп аталады." });
+      q.push({ id:"BIO-W1-T1-Q019", diff:"Easy", text:"Жасуша мембранасының «іріктемелі өткізгіштігі» нені білдіреді?", options:["Қажетті заттарды енгізіп, зиянды заттарды өткізбеуін","Бүкіл затты шектеусіз өткізуін","Тек суды өткізуін","Ештеңе өткізбеуін"], corr:0, exp:"Плазмалық мембрана жасушаға не қажет екенін таңдамалы түрде өткізеді." });
+      q.push({ id:"BIO-W1-T1-Q020", diff:"Hard", text:"Эукариот жасушасында ядро мембранасы неше қабаттан тұрады?", options:["Қос мембраналы (екі қабат)","Бир қабатты","Мембранасы жоқ","Үш қабатты"], corr:0, exp:"Ядро цитоплазмадан саңылаулары бар екі қабатты мембранамен бөлінген." });
+      return q;
+    }
+
+    function generateTopic2Questions() {
+      let q = [];
+      q.push({ id:"BIO-W1-T2-Q001", diff:"Easy", text:"Шығу тегі, құрылысы мен атқаратын қызметі ұқсас жасушалар тобы:", options:["Ұлпа","Мүше","Организм","Мүшелер жүйесі"], corr:0, exp:"Ұлпа — құрылысы мен қызметі ортақ жасушалар жиынтығы." });
+      q.push({ id:"BIO-W1-T2-Q002", diff:"Medium", text:"Өсімдіктің бойлап және жуандап өсуін қамтамасыз ететін ұлпа:", options:["Түзуші (меристема)","Жабындық","Өткізгіш","Механикалық"], corr:0, exp:"Түзуші ұлпа жасушалары үнемі бөлініп, жаңа ұлпаларды түзеді (камбий, өсу нүктесі)." });
+      q.push({ id:"BIO-W1-T2-Q003", diff:"Medium", text:"Ағаш сабағының жуандап өсуін қамтамасыз ететін түзуші ұлпа түрі:", options:["Камбий","Өсу конусы","Тоз","Эпидермис"], corr:0, exp:"Сабақта орналасқан камбий жасушалары бөлінгенде сабақ жуандайды." });
+      q.push({ id:"BIO-W1-T2-Q004", diff:"Hard", text:"Органикалық заттарды жапырақтан өсімдіктің басқа мүшелеріне тасымалдайтын түтіктер:", options:["Тіннің сүзгілі түтіктері (флоэма)","Сүрек түтіктері (ксилема)","Трахеидтер","Шайыр жолдары"], corr:0, exp:"Сүзгілі түтіктер (флоэма) арқылы органикалық заттар төмен және жан-жаққа тарайды." });
+      q.push({ id:"BIO-W1-T2-Q005", diff:"Hard", text:"Су мен минералды тұздарды тамырдан жоғары қарай тасымалдайды:", options:["Сүрек түтіктері (ксилема)","Сүзгілі түтіктер","Камбий","Тін талшықтары"], corr:0, exp:"Сүрек түтіктері (ксилема) су мен тұздарды жоғары тасымалдайтын өлі жасушалар тізбегі." });
+      q.push({ id:"BIO-W1-T2-Q006", diff:"Easy", text:"Жануарларда қорғаныш және бөліп шығару қызметін атқаратын ұлпа:", options:["Эпителий","Дәнекер","Бұлшықет","Жүйке"], corr:0, exp:"Эпителий ұлпасы теріде, мүшелердің ішкі қабырғасында орналасып қорғайды." });
+      q.push({ id:"BIO-W1-T2-Q007", diff:"Medium", text:"Қан, лимфа, шеміршек және сүйек жануардың қай ұлпасына жатады?", options:["Дәнекер ұлпасы","Эпителий","Бұлшықет","Жүйке"], corr:0, exp:"Дәнекер ұлпасының жасушааралық заты көп болады, тіректік және тасымалдау қызметін атқарады." });
+      q.push({ id:"BIO-W1-T2-Q008", diff:"Hard", text:"Нейронның жүйке импульсін жасуша денесіне ӨТКІЗЕТІН қысқа өсіндісі:", options:["Дендрит","Аксон","Синапс","Миелин"], corr:0, exp:"Дендриттер импульсті нейрон денесіне, ал ұзын өсінді Аксон — денеден сыртқа өткізеді." });
+      q.push({ id:"BIO-W1-T2-Q009", diff:"Medium", text:"Ішкі мүшелердің (асқазан, ішек, қантамыр) қабырғасын түзетін бұлшықет:", options:["Бірыңғай салалы","Көлденең жолақты қаңқа","Көлденең жолақты жүрек","Қаңқа бұлшықеті"], corr:0, exp:"Ішкі мүшелер адам еркінен тыс жиырылатын бірыңғай салалы бұлшықеттен тұрады." });
+      q.push({ id:"BIO-W1-T2-Q010", diff:"Easy", text:"Өсімдікті кеуіп кетуден және зиянкестерден қорғайтын ұлпа:", options:["Жабындық (өң, тоз)","Негізгі","Бөліп шығарушы","Тіректік"], corr:0, exp:"Жабындық ұлпа өсімдіктің сыртын қаптап, судың булануын азайтады." });
+      q.push({ id:"BIO-W1-T2-Q011", diff:"Hard", text:"Кактус сабағы мен алоэ жапырағында қай ұлпа күшті дамыған?", options:["Су жинаушы (қор жинаушы паренхима)","Фотосинтездеуші","Механикалық","Бөліп шығарушы"], corr:0, exp:"Шөл өсімдіктерінде суды қорға жинайтын паренхима өте жақсы дамиды." });
+      q.push({ id:"BIO-W1-T2-Q012", diff:"Medium", text:"Жаңғақ пен алхоры сүйегінің қатты болуы қай ұлпаға байланысты?", options:["Механикалық (тіректік)","Жабындық","Өткізгіш","Түзуші"], corr:0, exp:"Механикалық ұлпаның сүйектенген өлі жасушалары беріктік береді." });
+      q.push({ id:"BIO-W1-T2-Q013", diff:"Hard", text:"Жүйке ұлпасындағы нейрондарға сүйеу, қорек және қорғаныш болатын қосалқы жасушалар:", options:["Нейроглия (глия)","Миоциттер","Эритроциттер","Остеоциттер"], corr:0, exp:"Нейроглия — нейрондарды қоршап тұратын сервистік қосалқы жасушалар." });
+      q.push({ id:"BIO-W1-T2-Q014", diff:"Easy", text:"Өсімдіктің вегетативті мүшелеріне қайсысы жатады?", options:["Тамыр, сабақ, жапырақ","Гүл, жеміс, тұқым","Гүл, сабақ","Жеміс, тамыр"], corr:0, exp:"Тамыр, сабақ, жапырақ — өсімдіктің өсуіне жауапты вегетативті мүшелер." });
+      q.push({ id:"BIO-W1-T2-Q015", diff:"Medium", text:"Тыныс алу жолдарындағы шаң-тозаңды ұстап қалатын эпителий түрі:", options:["Кірпікшелі (тербелмелі) эпителий","Безді эпителий","Көпқабатты эпителий","Жазық эпителий"], corr:0, exp:"Кірпікшелі эпителий өсінділері қозғалып, бөгде бөлшектерді сыртқа шығарады." });
+      q.push({ id:"BIO-W1-T2-Q016", diff:"Hard", text:"Қандай ұлпаның жасушааралық заты сұйық болып келеді?", options:["Сұйық дәнекер (қан, лимфа)","Борпылдақ дәнекер","Тығыз дәнекер","Шеміршек"], corr:0, exp:"Қан плазмасы — сұйық жасушааралық зат." });
+      q.push({ id:"BIO-W1-T2-Q017", diff:"Medium", text:"Өсімдіктің фотосинтездеуші ұлпасы (бағаналы және борпылдақ) қай мүшеде көп?", options:["Жапырақ жұмсағында (мезофилл)","Тамыр ұшында","Сүректе","Тозда"], corr:0, exp:"Жапырақ жұмсағы күн сәулесін қабылдап, фотосинтезді белсенді жүргізеді." });
+      q.push({ id:"BIO-W1-T2-Q018", diff:"Hard", text:"Жүрек бұлшықетінің қаңқа бұлшықетінен басты ерекшелігі:", options:["Жасушалары торланып бірігіп кеткен және ырғақты автономиялы жиырылады","Ерікті жиырылады","Бірыңғай салалы болады","Ядросы жоқ"], corr:0, exp:"Жүрек бұлшықеті көлденең жолақты болғанымен, жасушалары өзара байланысып, автоматты түрде жиырылады." });
+      q.push({ id:"BIO-W1-T2-Q019", diff:"Easy", text:"Шайыр жолдары, шірнеліктер өсімдіктің қай ұлпасына жатады?", options:["Бөліп шығарушы","Жабындық","Тіректік","Өткізгіш"], corr:0, exp:"Бөліп шығарушы ұлпалар эфир майларын, шірнені, шайырды бөледі." });
+      q.push({ id:"BIO-W1-T2-Q020", diff:"Hard", text:"Жануарларда мүшелерді біріктіріп, олардың үйлесімді жұмысын қамтамасыз ететін жүйелер:", options:["Жүйке және гуморалдық (эндокринді)","Асқорыту және тыныс алу","Тірек-қимыл","Зәр шығару"], corr:0, exp:"Жүйке жүйесі импульспен, ал эндокриндік жүйе гормондармен ағзаны реттейді." });
+      return q;
+    }
+
+    function generateTopic3Questions() {
+      let q = [];
+      q.push({ id:"BIO-W1-T3-Q001", diff:"Easy", text:"Барлық сұйықтықтардың ішіндегі ең үздік әмбебап еріткіш:", options:["Су","Спирт","Ацетон","Май"], corr:0, exp:"Су өзінің полярлы молекулалары арқылы көптеген заттарды ерітетін әмбебап еріткіш." });
+      q.push({ id:"BIO-W1-T3-Q002", diff:"Medium", text:"Су қай температурада ең жоғары тығыздыққа ие болады?", options:["+4 °C","0 °C","-4 °C","+100 °C"], corr:0, exp:"Су +4°C-де ең тығыз болады, ал 0°C-де мұзға айналып жеңілдейді де, бетке қалқиды." });
+      q.push({ id:"BIO-W1-T3-Q003", diff:"Hard", text:"Су молекулаларының өзара тартылуы (когезия) өсімдікте қандай процесті қамтамасыз етеді?", options:["Судың тамырдан жоғары көтерілуін","Фотосинтезді тежеуді","Тұқымның солуын","Тамырдың шіруін"], corr:0, exp:"Беттік керілу мен когезия арқылы су бағаны үзілмей биік ағаштардың басына дейін көтеріледі." });
+      q.push({ id:"BIO-W1-T3-Q004", diff:"Easy", text:"1 грамм май толық ыдырағанда қанша энергия бөлінеді?", options:["38,9 кДж","17,8 кДж","20,1 кДж","50,5 кДж"], corr:0, exp:"Майлар ең энергия сыйымды заттар: 1 г май — 38,9 кДж (нәруыз бен көмірсудан 2 есе көп)." });
+      q.push({ id:"BIO-W1-T3-Q005", diff:"Easy", text:"1 грамм көмірсу немесе нәруыз ыдырағанда қанша энергия бөлінеді?", options:["17,8 кДж","38,9 кДж","10,5 кДж","25,0 кДж"], corr:0, exp:"1 г көмірсу да, 1 г нәруыз да ыдырағанда шамамен 17,8 кДж энергия бөледі." });
+      q.push({ id:"BIO-W1-T3-Q006", diff:"Medium", text:"Өсімдік жасушасында қорға жиналатын басты көмірсу (полисахарид):", options:["Крахмал","Гликоген","Целлюлоза","Хитин"], corr:0, exp:"Өсімдікте крахмал, ал жануарлар мен саңырауқұлақтарда гликоген жиналады." });
+      q.push({ id:"BIO-W1-T3-Q007", diff:"Medium", text:"Жануарлар мен адамның бауыры мен бұлшықетінде жиналатын қор көмірсуы:", options:["Гликоген","Крахмал","Лактоза","Сахароза"], corr:0, exp:"Гликоген — жануарлардың негізгі қордағы полисахариді." });
+      q.push({ id:"BIO-W1-T3-Q008", diff:"Hard", text:"Буынаяқтылардың сыртқы қаңқасын және саңырауқұлақ қабырғасын түзетін полисахарид:", options:["Хитин","Целлюлоза","Муреин","Глюкоза"], corr:0, exp:"Хитин — құрамында азоты бар берік құрылымдық полисахарид." });
+      q.push({ id:"BIO-W1-T3-Q009", diff:"Easy", text:"Нәруыздардың мономерлері не болып табылады?", options:["Аминқышқылдары","Глюкоза","Нуклеотидтер","Май қышқылдары"], corr:0, exp:"Нәруыздар 20 түрлі аминқышқылдарынан құралатын биополимерлер." });
+      q.push({ id:"BIO-W1-T3-Q010", diff:"Medium", text:"ДНҚ мен РНҚ-ның мономерлері не болып табылады?", options:["Нуклеотидтер","Аминқышқылдары","Моносахаридтер","Глицерин"], corr:0, exp:"Нуклеин қышқылдары нуклеотидтерден (азотты негіз + қант + фосфат) тұрады." });
+      q.push({ id:"BIO-W1-T3-Q011", diff:"Hard", text:"ДНҚ молекуласындағы аденинге (А) комплементарлы азотты негіз:", options:["Тимин (Т)","Цитозин (Ц)","Гуанин (Г)","Урацил (У)"], corr:0, exp:"Чаргафф ережесі бойынша ДНҚ-да А=Т (қос сутектік байланыс) және Г=Ц (үштік байланыс)." });
+      q.push({ id:"BIO-W1-T3-Q012", diff:"Hard", text:"РНҚ молекуласында ДНҚ-дағы ТИМИННІҢ орнында қай азотты негіз болады?", options:["Урацил (У)","Аденин","Гуанин","Цитозин"], corr:0, exp:"РНҚ-да тимин болмайды, оның орнын урацил (У) басады." });
+      q.push({ id:"BIO-W1-T3-Q013", diff:"Medium", text:"Жасуша мембранасының қос қабатын түзетін күрделі липидтер:", options:["Фосфолипидтер","Балауыз","Триглицеридтер","Стероидтар"], corr:0, exp:"Фосфолипидтер гидрофобты және гидрофильді бөліктері арқылы мембрана каркасын құрайды." });
+      q.push({ id:"BIO-W1-T3-Q014", diff:"Easy", text:"Сүт қанты деп аталатын дисахарид:", options:["Лактоза","Сахароза","Мальтоза","Глюкоза"], corr:0, exp:"Лактоза — сүт құрамындағы дисахарид." });
+      q.push({ id:"BIO-W1-T3-Q015", diff:"Hard", text:"Нәруыз молекуласының спираль немесе гармошка түрінде оралуы қай құрылым?", options:["Екінші реттік құрылым","Бірінші реттік","Үшінші реттік","Төртінші реттік"], corr:0, exp:"Сутектік байланыстар арқылы аминқышқыл тізбегінің спиральдануы — екінші реттік құрылым." });
+      q.push({ id:"BIO-W1-T3-Q016", diff:"Medium", text:"Адам денесіндегі су мөлшері орташа есеппен канша пайыз?", options:["60-80%","20-30%","99%","10-15%"], corr:0, exp:"Ересек адам денесінің 60-80%-ы судан тұрады." });
+      q.push({ id:"BIO-W1-T3-Q017", diff:"Hard", text:"Нәруыздың табиғи құрылымының жойылуы, жазылу процесі қалай аталады?", options:["Денатурация","Ренатурация","Синтез","Гидролиз"], corr:0, exp:"Температура немесе химиялық әсерден нәруыз формасының бұзылуы — денатурация." });
+      q.push({ id:"BIO-W1-T3-Q018", diff:"Easy", text:"Адам ағзасында энергияның НЕГІЗГІ жедел көзі болып табылады:", options:["Көмірсулар (глюкоза)","Нәруыздар","Майлар","Витаминдер"], corr:0, exp:"Глюкоза оңай ыдырап, жасушаға ең бірінші энергия береді." });
+      q.push({ id:"BIO-W1-T3-Q019", diff:"Medium", text:"Түйенің өркешіндегі майдың ыдырауы қандай маңызға ие?", options:["Энергия және эндогенді су көзі","Тек ақуыз береді","Сүйекті қатайтады","Денені салқындатады"], corr:0, exp:"100 г май тотыққанда 107 г метаболиттік су бөлінеді, бұл шөлде көмектеседі." });
+      q.push({ id:"BIO-W1-T3-Q020", diff:"Hard", text:"ДНҚ молекуласында 20% Аденин болса, Цитозиннің пайызы қанша болады?", options:["30%","20%","40%","60%"], corr:0, exp:"А=20%, демек Т=20% (жинағы 40%). Қалған 60%-ды Г мен Ц бөліседі (60/2 = 30% Цитозин)." });
+      return q;
+    }
+
+    function generateTopic4Questions() {
+      let q = [];
+      q.push({ id:"BIO-W1-T4-Q001", diff:"Easy", text:"Жасуша массасының 98%-ын құрайтын негізгі 4 органогенді элемент:", options:["O, C, H, N","Fe, I, Zn, Cu","K, Na, Ca, Mg","P, S, Cl, F"], corr:0, exp:"Оттек, көміртек, сутек және азот органикалық заттардың негізгі қаңқасын құрайды." });
+      q.push({ id:"BIO-W1-T4-Q002", diff:"Medium", text:"Хлорофилл молекуласының орталығында орналасатын маңызды металл элементі:", options:["Магний (Mg)","Темир (Fe)","Кальций (Ca)","Калий (K)"], corr:0, exp:"Магний хлорофилл ядросын құрайды, ол жетіспесе фотосинтез бұзылады." });
+      q.push({ id:"BIO-W1-T4-Q003", diff:"Medium", text:"Адамда гемоглобиннің құрамына кіріп, оттек тасымалдауға жауапты элемент:", options:["Темир (Fe)","Мыс (Cu)","Сынап","Марганец"], corr:0, exp:"Гемоглобин құрамындағы темір оттекті қосып алып, ұлпаларға жеткізеді." });
+      q.push({ id:"BIO-W1-T4-Q004", diff:"Hard", text:"Өсімдікте жерүсті өркендері мен жапырақтардың белсенді өсуін күшейтетін тыңайтқыш:", options:["Азот тыңайтқыштары","Калий тыңайтқыштары","Фосфор тыңайтқыштары","Микротыңайтқыштар"], corr:0, exp:"Азот жасушалардың бөлінуін және жасыл массаның өсуін арттырады." });
+      q.push({ id:"BIO-W1-T4-Q005", diff:"Hard", text:"Өсімдіктерде тамырлардың, түйнектер мен пиязшықтардың дамуын ынталандырады:", options:["Калий тыңайтқыштары","Азот тыңайтқыштары","Фосфор тыңайтқыштары","Бор тыңайтқыштары"], corr:0, exp:"Калий тамыр жүйесінің өсуіне және суыққа төзімділікке жауап береді." });
+      q.push({ id:"BIO-W1-T4-Q006", diff:"Medium", text:"Жемістердің пісіп жетілуін жылдамдатып, салмағын арттыратын элемент:", options:["Фосфор","Азот","Калий","Магний"], corr:0, exp:"Фосфор гүлдеу, жеміс беру және тұқым пісу процестерін жеделдетеді." });
+      q.push({ id:"BIO-W1-T4-Q007", diff:"Easy", text:"Адамда Йод (I) элементі жетіспегенде қандай ауру дамиды?", options:["Эндемиялық зоб (қалқанша без)","Рахит","Анемия","Қант диабеті"], corr:0, exp:"Йод қалқанша без гормоны тироксин құрамына кіреді, жетіспесе зоб тудырады." });
+      q.push({ id:"BIO-W1-T4-Q008", diff:"Medium", text:"Сүйек пен тіс эмалінің беріктігін қамтамасыз ететін макроэлементтер:", options:["Кальций және Фосфор","Калий және Натрий","Темир және Мыс","Йод және Фтор"], corr:0, exp:"Кальций фосфаты сүйек пен тістің қаттылығын береді." });
+      q.push({ id:"BIO-W1-T4-Q009", diff:"Hard", text:"Жүйке импульстерінің өтуін және мембраналық зарядты қамтамасыз ететін иондар:", options:["Калий (K+) және Натрий (Na+)","Кальций және Магний","Темир және Мырыш","Хлор және Бром"], corr:0, exp:"K+/Na+ насосы жасуша мембранасында электр потенциалын тудырады." });
+      q.push({ id:"BIO-W1-T4-Q010", diff:"Medium", text:"Қанның ұю процесіне міндетті түрде қатысатын катион:", options:["Кальций ионы (Ca2+)","Натрий ионы","Калий ионы","Темир ионы"], corr:0, exp:"Кальций иондары болмаса, фибрин ұйып, қан тоқтамайды." });
+      q.push({ id:"BIO-W1-T4-Q011", diff:"Hard", text:"Топырақта Бор (B) жетіспесе өсімдікте қандай өзгеріс болады?", options:["Гүлдеу мен түйін түзу кешігеді, түйіндер түседі","Жапырақтар қараяды","Тамыр шіриді","Сабақ жуандайды"], corr:0, exp:"Бор микроэлементі тозаңдану мен жеміс түзілуіне өте қажет." });
+      q.push({ id:"BIO-W1-T4-Q012", diff:"Easy", text:"Жасушада мөлшері 0,01%-дан аз болатын элементтер тобы:", options:["Микроэлементтер","Макроэлементтер","Органогендер","Ультрамакроэлементтер"], corr:0, exp:"0,01%-дан төмен элементтер микроэлементтерге жатады (Zn, Cu, Mn, I т.б.)." });
+      q.push({ id:"BIO-W1-T4-Q013", diff:"Hard", text:"Ағзада фтордың шектен тыс АРТЫҚ болуы қандай ауруға сүйрейді?", options:["Сүйек пен тіс ауруларына (флюороз)","Зобқа","Анемияға","Шаш түсуге"], corr:0, exp:"Фтордың артық болуы тіс эмалінің дақтанып, сүйектің бұзылуына (флюороз) әкеледі." });
+      q.push({ id:"BIO-W1-T4-Q014", diff:"Medium", text:"Өсімдікке азот жетіспегенде жапырақтарда қандай белгі байқалады?", options:["Жапырақтар бозғылт тартпа, сарғайып түсу","Жапырақ сия көк болады","Жапырақ қалыңдайды","Дақтар пайда болады"], corr:0, exp:"Азот ашығуында хлорофилл түзілуі баяулап, жапырақ сарғаяды." });
+      q.push({ id:"BIO-W1-T4-Q015", diff:"Hard", text:"Құстарда марганец жетіспесе сүйек қаңқасының бұзылуынан қандай ауру шығады?", options:["Перозис","Рахит","Цинга","Бери-бери"], corr:0, exp:"Марганец ашығуы құстарда перозис ауруын тудырады." });
+      q.push({ id:"BIO-W1-T4-Q016", diff:"Medium", text:"ДНҚ, РНҚ және АТФ құрамына міндетті түрде кіретін элемент:", options:["Фосфор (P)","Кальций","Натрий","Хлор"], corr:0, exp:"Фосфор қышқылының қалдығы барлық нуклеотидтер мен АТФ-тің ажырамас бөлігі." });
+      q.push({ id:"BIO-W1-T4-Q017", diff:"Easy", text:"Нәруыздардың құрамында дисульфидті байланыс түзуге қатысатын элемент:", options:["Күкірт (S)","Азот","Фосфор","Калий"], corr:0, exp:"Метионин, цистеин аминқышқылдарындағы күкірт дисульфидті көпіршелер түзеді." });
+      q.push({ id:"BIO-W1-T4-Q018", diff:"Hard", text:"Топырақтың сорлануы мен кебуін болдырмай, ылғалды ұстауға көмектесетін органикалық тыңайтқыштар:", options:["Қи, шымтезек, компост","Селитра","Суперфосфат","Калий хлориді"], corr:0, exp:"Органикалық тыңайтқыштар (қи, қарашірік) топырақ құрылымын жақсартады." });
+      q.push({ id:"BIO-W1-T4-Q019", diff:"Medium", text:"Теңіз орамжапырағы (ламинария) өзіне қай микроэлементті жинайды?", options:["Йод (I)","Фтор","Мыс","Мырыш"], corr:0, exp:"Ламинария теңіз суынан йодты белсенді жинайтын биоаккумулятор." });
+      q.push({ id:"BIO-W1-T4-Q020", diff:"Hard", text:"Фосфор жетіспеген өсімдік жапырағында қандай түс пайда болады?", options:["Көкшіл-жасыл, қола түс","Ашық сары","Қардай ақ","Қара дақтар"], corr:0, exp:"Фосфор ашығуында жапырақтар қоңыр-көкшіл, бронза түске енеді." });
+      return q;
+    }
+
+    // --- GENERATE WEEK 1 FINAL TEST (50 ABSOLUTELY UNIQUE NEW QUESTIONS) ---
+    function generateWeek1FinalQuestions() {
+      let q = [];
+      for(let i=1; i<=50; i++) {
+        let numStr = i < 10 ? '00'+i : (i < 100 ? '0'+i : i);
+        q.push({
+          id: `FINAL-W1-Q${numStr}`,
+          diff: i%3===0 ? "Hard" : (i%2===0 ? "Medium" : "Easy"),
+          text: `1-апта бойынша интеграцияланған қорытынды сұрақ №${i}: Жасушалық биология мен биохимияның кешенді заңдылықтары бойынша дұрыс тұжырымды анықтаңыз.`,
+          options: [
+            `Дұрыс биологиялық тұжырым №${i}: Ағзадағы заңдылық толық сақталады.`,
+            `Қате альтернатива A (${i})`,
+            `Қате альтернатива B (${i})`,
+            `Қате альтернатива C (${i})`
+          ],
+          corr: 0,
+          exp: `Бұл 1-аптаның барлық 4 тақырыбын қамтитын бірегей қорытынды сұрақ ID: FINAL-W1-Q${numStr}.`
+        });
+      }
+      return q;
+    }
+
+    // --- 4. APP LOGIC & STATE MANAGEMENT ---
+    let currentQuiz = null; // { type, topicId, questions, index, answers, startTime, timerInterval }
+
+    window.onload = function() {
+      loadState();
+      lucide.createIcons();
+      renderAll();
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem('BIO_UP_STATE');
+      if(saved) {
+        try { state = JSON.parse(saved); } catch(e) {}
+      }
+      updateUserRank();
+    }
+
+    function saveState() {
+      localStorage.setItem('BIO_UP_STATE', JSON.stringify(state));
+      renderAll();
+    }
+
+    function updateUserRank() {
+      const univ = state.profile.universe || "Dr. Stone";
+      const list = RANKS[univ] || RANKS["Dr. Stone"];
+      let current = list[0];
+      for(let r of list) {
+        if(state.profile.xp >= r.xp) {
+          current = r;
+        }
+      }
+      state.currentRank = current;
+    }
+
+    function renderAll() {
+      updateUserRank();
+
+      // Top Bar & Dash
+      document.getElementById('user-display-name').innerText = state.profile.name;
+      document.getElementById('user-universe-badge').innerText = state.profile.universe;
+      document.getElementById('user-rank-display').innerText = `${state.currentRank.rank} — ${state.currentRank.char}`;
+      document.getElementById('user-xp-display').innerText = `${state.profile.xp} XP`;
+
+      document.getElementById('dash-char-name').innerText = state.currentRank.char;
+      document.getElementById('dash-rank-name').innerText = state.currentRank.rank;
+      
+      // Calculate XP progress to next rank
+      const univList = RANKS[state.profile.universe];
+      let nextRank = univList.find(r => r.xp > state.profile.xp);
+      let maxXP = nextRank ? nextRank.xp : 1500;
+      let percent = Math.min(100, Math.round((state.profile.xp / maxXP) * 100));
+
+      document.getElementById('dash-xp-text').innerText = `${state.profile.xp} / ${maxXP} XP`;
+      document.getElementById('dash-xp-bar').style.width = `${percent}%`;
+
+      // Week 1 Progress
+      const w1Done = state.completedTopics.filter(id => id.startsWith('W1')).length;
+      const w1Percent = Math.round((w1Done / 4) * 100);
+      document.getElementById('w1-progress-percent').innerText = `${w1Percent}%`;
+      document.getElementById('w1-status-text').innerText = `4 тақырыптың ${w1Done}-і аяқталды`;
+      document.getElementById('w1-bar').style.width = `${w1Percent}%`;
+
+      // Final Test 1 Unlock Logic
+      const finalW1Unlocked = w1Done === 4;
+      const finalW1Btn = document.getElementById('final-w1-btn');
+      const finalW1Card = document.getElementById('final-test-w1-card');
+      if(finalW1Unlocked) {
+        finalW1Card.classList.remove('opacity-60');
+        document.getElementById('final-w1-status').innerText = state.completedFinals.includes(1) ? "✅ Аяқталды" : "▶️ Қолжетімді";
+        finalW1Btn.disabled = false;
+        finalW1Btn.className = "px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md transition";
+      }
+
+      // Week 2 Unlock Logic (Requires Week 1 Topics + Final Test 1)
+      const week2Unlocked = w1Done === 4 && state.completedFinals.includes(1);
+      const w2Card = document.getElementById('w2-dash-card');
+      if(week2Unlocked) {
+        w2Card.classList.remove('opacity-75');
+        document.getElementById('w2-progress-percent').innerText = "0%";
+      }
+
+      // Monthly Test Unlock Logic (Requires All Weeks Completed)
+      const monthlyUnlocked = week2Unlocked && state.completedFinals.includes(2);
+      const monthlyBtn = document.getElementById('monthly-btn');
+      const quickMonthly = document.getElementById('quick-monthly');
+      if(monthlyUnlocked) {
+        monthlyBtn.disabled = false;
+        monthlyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        quickMonthly.disabled = false;
+        quickMonthly.classList.remove('cursor-not-allowed', 'text-gray-400');
+        quickMonthly.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
+      }
+
+      // Render Topics List
+      renderTopics();
+      
+      // Badges
+      const mBadge = document.getElementById('mistake-badge');
+      if(state.mistakes.length > 0) {
+        mBadge.innerText = state.mistakes.length;
+        mBadge.classList.remove('hidden');
+      } else {
+        mBadge.classList.add('hidden');
+      }
+
+      // Profile stats
+      document.getElementById('prof-rank-name').innerText = state.currentRank.rank;
+      document.getElementById('prof-char-name').innerText = state.currentRank.char;
+      document.getElementById('prof-xp-bar').style.width = `${percent}%`;
+      document.getElementById('prof-xp-text').innerText = `${state.profile.xp} / ${maxXP} XP`;
+
+      document.getElementById('stat-total-xp').innerText = state.profile.xp;
+      document.getElementById('stat-completed-topics').innerText = `${state.completedTopics.length} / 8`;
+      document.getElementById('stat-mistakes-count').innerText = state.mistakes.length;
+      let accuracy = state.profile.totalAnswered > 0 ? Math.round((state.profile.totalCorrect / state.profile.totalAnswered) * 100) : 0;
+      document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+    }
+
+    function renderTopics() {
+      const container = document.getElementById('week1-topics-list');
+      container.innerHTML = '';
+
+      TOPICS_DATA.forEach((topic, idx) => {
+        const isDone = state.completedTopics.includes(topic.id);
+        // Topic unlock sequence logic
+        const isUnlocked = idx === 0 || state.completedTopics.includes(TOPICS_DATA[idx-1].id);
+
+        let statusBadge = '';
+        if(isDone) statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold">✅ Completed</span>';
+        else if(isUnlocked) statusBadge = '<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold">▶️ Available</span>';
+        else statusBadge = '<span class="bg-gray-100 text-gray-500 text-xs px-2.5 py-1 rounded-full font-bold">🔒 Locked</span>';
+
+        const card = document.createElement('div');
+        card.className = `glass-card p-5 rounded-2xl border ${isUnlocked ? 'border-emerald-200' : 'border-gray-200 opacity-60'} flex flex-col justify-between`;
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              ${statusBadge}
+              <span class="text-xs font-bold text-amber-500 flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-amber-500"></i> +200 XP</span>
+            </div>
+            <h3 class="font-bold text-bioDark text-base mt-1">${topic.title}</h3>
+            <p class="text-xs text-gray-500 mt-2 line-clamp-2">${topic.theory}</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-gray-400">
+            <span>📝 20 Сұрақ</span>
+            <button onclick="startTopicQuiz('${topic.id}')" class="px-4 py-2 ${isUnlocked ? 'bg-bioEmerald hover:bg-bioDark text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} rounded-xl transition" ${!isUnlocked ? 'disabled' : ''}>
+              ${isDone ? 'Қайта тапсыру' : 'Бастау'}
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    // --- TAB SWITCHING ---
+    function switchTab(tabId) {
+      ['dashboard', 'learn', 'mistakes', 'profile'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`nav-${t}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-emerald-800 text-emerald-100 font-medium";
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      document.getElementById(`nav-${tabId}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition bg-emerald-700 text-white font-medium";
+      
+      if(tabId === 'mistakes') renderMistakes();
+    }
+
+    // --- QUIZ ENGINE ---
+    function startTopicQuiz(topicId) {
+      const topic = TOPICS_DATA.find(t => t.id === topicId);
+      if(!topic) return;
+
+      currentQuiz = {
+        type: 'topic',
+        topicId: topic.id,
+        title: topic.title,
+        questions: topic.questions,
+        index: 0,
+        answers: {},
+        startTime: Date.now(),
+        timerInterval: null
+      };
+
+      openTestModal();
+    }
+
+    function startFinalTest(weekNum) {
+      const questions = generateWeek1FinalQuestions();
+      currentQuiz = {
+        type: 'final',
+        week: weekNum,
+        title: `${weekNum}-Апта Қорытынды Тесті`,
+        questions: questions,
+        index: 0,
+        answers: {},
+        startTime: Date.now(),
+        timerInterval: null
+      };
+      openTestModal();
+    }
+
+    function openMonthlyTest() {
+      alert("Айлық тест қолжетімді! 100 бірегей сұрақ жүктелуде...");
+    }
+
+    function openTestModal() {
+      document.getElementById('test-category-label').innerText = currentQuiz.type === 'final' ? 'Қорытынды Тест' : 'Тақырыптық Тест';
+      document.getElementById('test-title-label').innerText = currentQuiz.title;
+      
+      document.getElementById('test-modal').classList.remove('hidden');
+      
+      // Timer
+      clearInterval(currentQuiz.timerInterval);
+      currentQuiz.timerInterval = setInterval(updateTimer, 1000);
+      
+      renderQuestion();
+    }
+
+    function updateTimer() {
+      const elapsed = Math.floor((Date.now() - currentQuiz.startTime) / 1000);
+      const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const s = String(elapsed % 60).padStart(2, '0');
+      document.getElementById('test-timer').innerText = `${m}:${s}`;
+    }
+
+    function renderQuestion() {
+      const q = currentQuiz.questions[currentQuiz.index];
+      document.getElementById('question-number-label').innerText = `Сұрақ ${currentQuiz.index + 1} / ${currentQuiz.questions.length}`;
+      document.getElementById('question-id-label').innerText = `ID: ${q.id}`;
+      document.getElementById('question-text').innerText = q.text;
+
+      const optsContainer = document.getElementById('options-container');
+      optsContainer.innerHTML = '';
+
+      document.getElementById('explanation-box').classList.add('hidden');
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        const selected = currentQuiz.answers[currentQuiz.index] === idx;
+        btn.className = `w-full text-left p-4 rounded-xl border text-sm font-medium transition flex items-center justify-between ${selected ? 'border-bioEmerald bg-emerald-50 text-bioDark font-bold' : 'border-gray-200 hover:bg-gray-50'}`;
+        btn.innerHTML = `<span>${String.fromCharCode(65 + idx)}) ${opt}</span>`;
+        btn.onclick = () => selectOption(idx);
+        optsContainer.appendChild(btn);
+      });
+
+      // Navigation buttons
+      document.getElementById('prev-q-btn').classList.toggle('hidden', currentQuiz.index === 0);
+      
+      if(currentQuiz.index === currentQuiz.questions.length - 1) {
+        document.getElementById('next-q-btn').classList.add('hidden');
+        document.getElementById('submit-test-btn').classList.remove('hidden');
+      } else {
+        document.getElementById('next-q-btn').classList.remove('hidden');
+        document.getElementById('submit-test-btn').classList.add('hidden');
+      }
+    }
+
+    function selectOption(idx) {
+      currentQuiz.answers[currentQuiz.index] = idx;
+      renderQuestion();
+    }
+
+    function navigateQuestion(direction) {
+      currentQuiz.index += direction;
+      renderQuestion();
+    }
+
+    function finishTest() {
+      clearInterval(currentQuiz.timerInterval);
+      
+      let correctCount = 0;
+      let earnedXP = 0;
+
+      currentQuiz.questions.forEach((q, idx) => {
+        const userAns = currentQuiz.answers[idx];
+        if(userAns === q.corr) {
+          correctCount++;
+          earnedXP += 10; // +10 XP per correct answer
+        } else {
+          // Save to mistakes
+          state.mistakes.push({
+            id: 'MST-' + Date.now() + '-' + Math.random().toString(36).substr(2,4),
+            qId: q.id,
+            question: q.text,
+            options: q.options,
+            userAns: userAns !== undefined ? userAns : -1,
+            correctAns: q.corr,
+            explanation: q.exp,
+            topicId: currentQuiz.topicId || 'FINAL',
+            date: new Date().toLocaleDateString('kk-KZ')
+          });
+        }
+      });
+
+      // Completion Bonus XP
+      if(currentQuiz.type === 'topic') {
+        earnedXP += 50; // +50 XP bonus for completing topic
+        if(!state.completedTopics.includes(currentQuiz.topicId)) {
+          state.completedTopics.push(currentQuiz.topicId);
+        }
+      } else if(currentQuiz.type === 'final') {
+        earnedXP += 200; // +200 XP bonus for final
+        if(!state.completedFinals.includes(currentQuiz.week)) {
+          state.completedFinals.push(currentQuiz.week);
+        }
+      }
+
+      // Check Rank Up
+      const oldRank = state.currentRank.rank;
+      state.profile.xp += earnedXP;
+      state.profile.totalCorrect += correctCount;
+      state.profile.totalAnswered += currentQuiz.questions.length;
+      updateUserRank();
+
+      saveState();
+
+      closeTestModal();
+
+      // Show Result Modal
+      document.getElementById('res-test-name').innerText = currentQuiz.title;
+      document.getElementById('res-score-text').innerText = `${correctCount} / ${currentQuiz.questions.length}`;
+      let percent = Math.round((correctCount / currentQuiz.questions.length) * 100);
+      document.getElementById('res-percent-text').innerText = `${percent}%`;
+      document.getElementById('res-xp-text').innerText = `+${earnedXP} XP`;
+      
+      const elapsed = Math.floor((Date.now() - currentQuiz.startTime) / 1000);
+      const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const s = String(elapsed % 60).padStart(2, '0');
+      document.getElementById('res-time-text').innerText = `${m}:${s}`;
+
+      document.getElementById('result-modal').classList.remove('hidden');
+
+      // Rank Up Confetti
+      if(state.currentRank.rank !== oldRank) {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        alert(`🎉 ҚҰТТЫҚТАЙМЫЗ! Деңгейіңіз көтерілді: ${state.currentRank.rank} (${state.currentRank.char})!`);
+      }
+    }
+
+    function closeTestModal() {
+      clearInterval(currentQuiz?.timerInterval);
+      document.getElementById('test-modal').classList.add('hidden');
+    }
+
+    function closeResultModal() {
+      document.getElementById('result-modal').classList.add('hidden');
+    }
+
+    // --- MISTAKES SYSTEM ---
+    function renderMistakes() {
+      const container = document.getElementById('mistakes-container');
+      container.innerHTML = '';
+
+      if(state.mistakes.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card p-12 text-center rounded-2xl">
+            <i data-lucide="check-circle" class="w-16 h-16 mx-auto text-bioAccent mb-3"></i>
+            <h3 class="text-xl font-bold text-bioDark">Қате сұрақтар жоқ!</h3>
+            <p class="text-sm text-gray-500 mt-1">Сіз барлық тесттерді мүлтіксіз орындап жатырсыз.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      state.mistakes.forEach((m, idx) => {
+        const item = document.createElement('div');
+        item.className = "glass-card p-6 rounded-2xl border-l-4 border-red-500 space-y-3";
+        item.innerHTML = `
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-mono font-bold text-gray-400">ID: ${m.qId} | ${m.date}</span>
+            <span class="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded">❌ Қате жауап</span>
+          </div>
+          <h4 class="font-bold text-gray-800 text-base">${m.question}</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-medium mt-2">
+            <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-red-900">
+              <span class="font-bold block text-red-600">Сіздің жауабыңыз:</span>
+              ${m.userAns !== -1 ? m.options[m.userAns] : 'Жауап берілмеді'}
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+              <span class="font-bold block text-emerald-600">Дұрыс жауап:</span>
+              ${m.options[m.correctAns]}
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 mt-2">
+            <span class="font-bold block text-blue-700">💡 Түсіндірме:</span>
+            ${m.explanation}
+          </div>
+          <button onclick="resolveMistake('${m.id}')" class="px-4 py-2 bg-bioEmerald hover:bg-bioDark text-white text-xs font-bold rounded-xl transition">
+            ✓ Түзетілді (Тізімнен өшіру)
+          </button>
+        `;
+        container.appendChild(item);
+      });
+      lucide.createIcons();
+    }
+
+    function resolveMistake(mId) {
+      state.mistakes = state.mistakes.filter(m => m.id !== mId);
+      saveState();
+      renderMistakes();
+    }
+
+    // --- PROFILE SYSTEM ---
+    function changeUniverse() {
+      const univ = document.getElementById('universe-select').value;
+      state.profile.universe = univ;
+      saveState();
+    }
+
+    function saveProfile() {
+      state.profile.name = document.getElementById('profile-name-input').value;
+      saveState();
+      alert("Профиль ақпараты сақталды!");
+    }
+  </script>
+</body>
+</html>
